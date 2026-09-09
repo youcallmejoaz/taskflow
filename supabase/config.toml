@@ -1,0 +1,7 @@
+project_id = "ytmuhvnsazgwgjrrfzgj"
+
+# The signup endpoint is called by anonymous visitors on the marketing page, so
+# there is no JWT to verify. It authenticates nothing and instead validates its
+# own input, rate-limits by IP, and screens bots with a honeypot field.
+[functions.signup]
+verify_jwt = false
