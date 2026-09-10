@@ -14,7 +14,7 @@ validates the address and inserts a row into Postgres.
 | Front end  | React 19, Vite 6, hand-written CSS            |
 | Backend    | Supabase Edge Function (Deno)                 |
 | Database   | Supabase Postgres                             |
-| Hosting    | Vercel (static build)                         |
+| Hosting    | GitHub Pages (built by GitHub Actions)        |
 
 No CSS framework and no client-side Supabase SDK — the page posts to the
 endpoint with `fetch`, which keeps the JS bundle at roughly 74 kB gzipped.
@@ -148,3 +148,41 @@ order by created_at desc;
 
 Run it from the Supabase SQL editor — the service role bypasses RLS, so the
 dashboard can read the table even though no client can.
+
+## Cloud-first workflow
+
+Builds do not run on a laptop. GitHub Actions runs `npm ci`, the Vite build, and
+the deploy, so a flaky local connection cannot block a release.
+
+| Branch      | Pushed to freely | CI does            |
+| ----------- | ---------------- | ------------------ |
+| `cloud-wip` | yes              | build only         |
+| `main`      | only on request  | build **+ deploy** |
+
+Day-to-day work lands on `cloud-wip`, where every push is build-verified without
+touching the live site. Publishing is a deliberate act:
+
+```bash
+git checkout main && git merge --ff-only cloud-wip && git push
+```
+
+That push is what deploys. Nothing reaches the live site by accident.
+
+### Local folder stays current
+
+`scripts/cloud-sync.sh` runs from a `SessionStart` hook in
+`.claude/settings.json` and fast-forwards this folder from `origin/cloud-wip`
+whenever the project is opened.
+
+It cannot destroy local work. It fetches, then merges only when the tree is
+clean, HEAD is `cloud-wip`, and the merge is a fast-forward. Anything else —
+uncommitted edits, offline, diverged history, a different branch — prints a note
+and changes nothing.
+
+### Running locally (optional)
+
+Not required; CI is the source of truth for builds.
+
+```bash
+npm install && npm run dev
+```
